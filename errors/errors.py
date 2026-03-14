@@ -10,6 +10,10 @@ class NoCodeInPathError(Exception):
     pass
 
 
+class NoFormFieldError(Exception):
+    pass
+
+
 class NoSuchCurrencyError(Exception):
     pass
 

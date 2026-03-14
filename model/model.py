@@ -51,6 +51,25 @@ class Model:
             if conn:
                 conn.close()
 
+    def add_currency(name: str, code: str, sign: str):
+        try:
+            conn = Model.get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO Currencies (FullName, Code, Sign) VALUES (?, ?, ?)",
+                (name, code, sign),
+            )
+            conn.commit()
+            cursor.execute("SELECT * FROM Currencies WHERE Code = ?", (code,))
+            row = cursor.fetchone()
+            currency = Serializer.make_currency(row)
+            return currency
+        except sqlite3.Error as e:
+            raise errors.DbError()
+        finally:
+            if conn:
+                conn.close()
+
 
 if __name__ == "__main__":
     try:

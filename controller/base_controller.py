@@ -1,36 +1,37 @@
 from http.server import BaseHTTPRequestHandler
 import json
+
+import urllib
 from view.view import View
 from service.service import Service
 from errors import errors
+from .get_handler import GetHandler
+from .post_handler import PostHandler
 
 
 class BaseHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
-        """Обрабатывает GET‑запросы: отдаёт форму или данные."""
         if self.path == "/":
-            self.send_json(View.get_index_json(), 200)
+            GetHandler.send_index(self)
         elif self.path == "/currencies":
-            try:
-                currency_list = Service.get_currencies()
-                self.send_json(View.get_json_from_list(currency_list), 200)
-            except errors.DbError:
-                self.send_json(View.get_error_json("Ошибка базы данных"), 500)
+            GetHandler.send_currencies(self)
         elif self.path.startswith("/currency/"):
-            try:
-                currency = Service.get_currency(self.path)
-                self.send_json(View.get_json_from_dict(currency), 200)
-            except errors.NoCodeInPathError:
-                self.send_json(
-                    View.get_error_json("Код валюты отсутсвует в адресе"), 400
-                )
-            except errors.NoSuchCurrencyError:
-                self.send_json(View.get_error_json("Валюта не найдена"), 404)
-            except errors.DbError:
-                self.send_json(View.get_error_json("Ошибка базы данных"), 500)
+            GetHandler.send_currency(self)
         else:
-            self.send_json(View.get_error_json("нет такой страницы"), 404)
+            GetHandler.send_error_page(self)
+
+    def do_POST(self):
+        content_length = int(self.headers.get("Content-Length", 0))
+        post_data = self.rfile.read(content_length)
+        # 2. Декодирование и разбор form-data
+        try:
+            form = urllib.parse.parse_qs(post_data.decode("utf-8"))
+        except UnicodeDecodeError:
+            self.send_json(View.get_error_json("Некорректная кодировка данных"), 400)
+            return
+        if self.path == "/currencies":
+            PostHandler.add_currency(self, form)
 
     def send_json(self, data: json, status: int):
         """Отправляет JSON с указанным статусом."""

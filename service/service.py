@@ -24,3 +24,20 @@ class Service:
                 raise errors.NoSuchCurrencyError()
         except errors.DbError:
             raise
+
+    def add_currency(form: dict):
+        try:
+            if not form:
+                raise errors.NoFormFieldError()
+            name = form.get("name", None)  # извлекает массив а не строку
+            code = form.get("code", None)
+            sign = form.get("sign", None)
+            if not Validator.validate_currency_form(name, code, sign):
+                raise errors.NoFormFieldError()
+            name, code, sign = name[0], code[0].upper(), sign[0]
+            if Model.get_currency(code):
+                raise errors.SuchCurrencyAlreadyExistsError()
+            currency = Model.add_currency(name, code, sign)
+            return currency
+        except errors.DbError:
+            raise
