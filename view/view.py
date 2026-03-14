@@ -2,19 +2,14 @@ import json
 
 
 class View:
-
-    @staticmethod
-    def get_index_json():
+    def get_index_json(self):
         return json.dumps({"message": "Main Page"}, ensure_ascii=False, indent=4)
 
-    @staticmethod
-    def get_error_json(message: str):
+    def get_error_json(self, message: str):
         return json.dumps({"message": message}, ensure_ascii=False, indent=4)
 
-    @staticmethod
-    def get_json_from_list(data: list):
+    def get_json_from_list(self, data: list):
         return json.dumps(data, ensure_ascii=False, indent=4)
 
-    @staticmethod
-    def get_json_from_dict(data: dict):
+    def get_json_from_dict(self, data: dict):
         return json.dumps(data, ensure_ascii=False, indent=4)

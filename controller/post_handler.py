@@ -1,33 +1,27 @@
+from http.server import BaseHTTPRequestHandler
 import json
 from view.view import View
 from service.service import Service
 from errors import errors
+from .json_mixin import JSONMixin
 
 
-class PostHandler:
+class PostHandler(JSONMixin):
 
-    @staticmethod
-    def send_json(base_hendler, data: json, status: int):
-        """Отправляет JSON с указанным статусом."""
-        base_hendler.send_response(status)
-        base_hendler.send_header("Content-Type", "application/json; charset=utf-8")
-        base_hendler.end_headers()
-        base_hendler.wfile.write(data.encode("utf-8"))
+    def __init__(self, handler, view: View, service: Service):
+        self.handler = handler
+        self.view = view
+        self.service = service
 
-    @staticmethod
-    def add_currency(base_handler, form: dict):
+    def add_currency(self, form: dict):
         try:
-            currency = Service.add_currency(form)
-            PostHandler.send_json(base_handler, View.get_json_from_dict(currency), 201)
+            currency = self.service.add_currency(form)
+            self.send_json(self.view.get_json_from_dict(currency), 201)
         except errors.NoFormFieldError:
-            PostHandler.send_json(
-                base_handler, View.get_error_json("Отсутствует нужное поле формы"), 400
+            self.send_json(
+                self.view.get_error_json("Отсутствует нужное поле формы"), 400
             )
         except errors.SuchCurrencyAlreadyExistsError:
-            PostHandler.send_json(
-                base_handler, View.get_error_json("Такая валюта уже существует"), 409
-            )
+            self.send_json(self.view.get_error_json("Такая валюта уже существует"), 409)
         except errors.DbError:
-            PostHandler.send_json(
-                base_handler, View.get_error_json("Ошибка базы данных"), 500
-            )
+            self.send_json(self.view.get_error_json("Ошибка базы данных"), 500)

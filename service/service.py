@@ -5,13 +5,13 @@ from .validator import Validator
 
 class Service:
 
-    def get_currencies():
+    def get_currencies(self):
         try:
             return Model.get_all_currency()
         except errors.DbError:
             raise
 
-    def get_currency(path: str):
+    def get_currency(self, path: str):
         try:
             is_currency_valid = Validator.validate_currency_code(path)
             if not is_currency_valid:
@@ -25,7 +25,7 @@ class Service:
         except errors.DbError:
             raise
 
-    def add_currency(form: dict):
+    def add_currency(self, form: dict):
         try:
             if not form:
                 raise errors.NoFormFieldError()

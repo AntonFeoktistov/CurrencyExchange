@@ -1,7 +1,9 @@
+from functools import cached_property
 from http.server import BaseHTTPRequestHandler
 import json
 
 import urllib
+from .json_mixin import JSONMixin
 from view.view import View
 from service.service import Service
 from errors import errors
@@ -9,17 +11,17 @@ from .get_handler import GetHandler
 from .post_handler import PostHandler
 
 
-class BaseHandler(BaseHTTPRequestHandler):
+class BaseHandler(BaseHTTPRequestHandler, JSONMixin):
 
     def do_GET(self):
         if self.path == "/":
-            GetHandler.send_index(self)
+            self.get_handler.send_index()
         elif self.path == "/currencies":
-            GetHandler.send_currencies(self)
+            self.get_handler.send_currencies()
         elif self.path.startswith("/currency/"):
-            GetHandler.send_currency(self)
+            self.get_handler.send_currency(self.path)
         else:
-            GetHandler.send_error_page(self)
+            self.get_handler.send_error_page()
 
     def do_POST(self):
         content_length = int(self.headers.get("Content-Length", 0))
@@ -28,14 +30,25 @@ class BaseHandler(BaseHTTPRequestHandler):
         try:
             form = urllib.parse.parse_qs(post_data.decode("utf-8"))
         except UnicodeDecodeError:
-            self.send_json(View.get_error_json("Некорректная кодировка данных"), 400)
+            self.send_json(
+                self.view.get_error_json("Некорректная кодировка данных"), 400
+            )
             return
         if self.path == "/currencies":
-            PostHandler.add_currency(self, form)
+            self.post_handler.add_currency(form)
 
-    def send_json(self, data: json, status: int):
-        """Отправляет JSON с указанным статусом."""
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.end_headers()
-        self.wfile.write(data.encode("utf-8"))
+    @cached_property
+    def view(self):
+        return View()
+
+    @cached_property
+    def service(self):
+        return Service()
+
+    @cached_property
+    def get_handler(self):
+        return GetHandler(self, self.view, self.service)
+
+    @cached_property
+    def post_handler(self):
+        return PostHandler(self, self.view, self.service)
