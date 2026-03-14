@@ -24,18 +24,18 @@ class BaseHandler(BaseHTTPRequestHandler, JSONMixin):
             self.get_handler.send_error_page()
 
     def do_POST(self):
-        content_length = int(self.headers.get("Content-Length", 0))
-        post_data = self.rfile.read(content_length)
-        # 2. Декодирование и разбор form-data
-        try:
-            form = urllib.parse.parse_qs(post_data.decode("utf-8"))
-        except UnicodeDecodeError:
-            self.send_json(
-                self.view.get_error_json("Некорректная кодировка данных"), 400
-            )
-            return
+        form = self.get_form()  # валидация формы дальше
         if self.path == "/currencies":
             self.post_handler.add_currency(form)
+
+    def get_form(self):
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            post_data = self.rfile.read(content_length)
+            form = urllib.parse.parse_qs(post_data.decode("utf-8"))
+            return form
+        except (ValueError, UnicodeDecodeError):
+            return None
 
     @cached_property
     def view(self):
