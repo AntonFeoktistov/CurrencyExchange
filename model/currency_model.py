@@ -1,16 +1,6 @@
-import os, sys
-
-"""
-# Добавляем корневую папку проекта в путь поиска модулей
-# Поднимаемся на два уровня вверх: model.py -> model/ -> CurrencyExchange/
-root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if root_dir not in sys.path:
-    sys.path.insert(0, root_dir)
-"""
 from errors import errors
 import sqlite3
 from .serializer import Serializer
-
 
 DB_FILE = "model/currencies.db"
 
@@ -76,13 +66,3 @@ class CurrencyModel:
                 return currency
         except sqlite3.Error as e:
             raise errors.DbError()
-
-
-"""
-if __name__ == "__main__":
-    try:
-        currencies = self.get_all_currency()
-        print(currencies)
-    except errors.DbError as e:
-        print(f"Ошибка: {e}")
-"""

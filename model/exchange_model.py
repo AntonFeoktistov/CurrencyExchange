@@ -1,5 +1,4 @@
 from functools import cached_property
-
 from errors import errors
 import sqlite3
 from .serializer import Serializer
@@ -71,7 +70,6 @@ class ExchangeModel:
                 )
                 row = cursor.fetchone()
                 return Serializer.make_exchange_rate_by_row(self, row)
-
         except sqlite3.Error as e:
             raise errors.DbError()
 

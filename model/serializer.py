@@ -1,18 +1,5 @@
 class Serializer:
 
-    def make_currency_list(rows: dict):
-        currencies = []
-        for row in rows:
-            currencies.append(
-                {
-                    "id": row["ID"],
-                    "name": row["FullName"],
-                    "code": row["Code"],
-                    "sign": row["SIGN"],
-                }
-            )
-        return currencies
-
     def make_currency(row: dict):
         currency = {}
         if row:
@@ -20,9 +7,16 @@ class Serializer:
                 "id": row["ID"],
                 "name": row["FullName"],
                 "code": row["Code"],
-                "sign": row["SIGN"],
+                "sign": row["Sign"],
             }
         return currency
+
+    def make_currency_list(rows: dict):
+        currencies = []
+        for row in rows:
+            currency = Serializer.make_currency(row)
+            currencies.append(currency)
+        return currencies
 
     @staticmethod
     def make_exchange_rate_by_row(model, row):
