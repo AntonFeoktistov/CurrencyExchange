@@ -93,6 +93,27 @@ class Service:
         except errors.DbError:
             raise
 
+    def update_exchange_rate(self, form: dict, path: str):
+        try:
+            if not form:
+                raise errors.NoFormFieldError()
+            rate = form.get("rate", [0])
+            if not Validator.validate_rate(rate[0]):
+                raise errors.NoFormFieldError()
+            is_exchange_rate_valid = Validator.validate_exchange_rate(path)
+            if not is_exchange_rate_valid:
+                raise errors.NoExchangeRatesInPathError()
+            base_code = path[-6:-3].upper()
+            target_code = path[-3:].upper()
+            if not self.exchange_model.get_exchange_rate(base_code, target_code):
+                raise errors.NoSuchExchangeRateError()
+            exchange_rate = self.exchange_model.update_exchange_rate(
+                base_code, target_code, rate[0]
+            )
+            return exchange_rate
+        except errors.DbError:
+            raise
+
     @cached_property
     def currency_model(self):
         return CurrencyModel()

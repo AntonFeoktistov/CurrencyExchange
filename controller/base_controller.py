@@ -9,6 +9,7 @@ from service.service import Service
 from errors import errors
 from .get_handler import GetHandler
 from .post_handler import PostHandler
+from .patch_handler import PatchHandler
 
 
 class BaseHandler(BaseHTTPRequestHandler, JSONMixin):
@@ -34,6 +35,11 @@ class BaseHandler(BaseHTTPRequestHandler, JSONMixin):
         if self.path == "/exchangeRates":
             self.post_handler.add_exchange_rate(form)
 
+    def do_PATCH(self):
+        form = self.get_form()
+        if self.path.startswith("/exchangeRate/"):
+            self.patch_handler.update_exchange_rate(form, self.path)
+
     def get_form(self):
         try:
             content_length = int(self.headers.get("Content-Length", 0))
@@ -58,3 +64,7 @@ class BaseHandler(BaseHTTPRequestHandler, JSONMixin):
     @cached_property
     def post_handler(self):
         return PostHandler(self, self.view, self.service)
+
+    @cached_property
+    def patch_handler(self):
+        return PatchHandler(self, self.view, self.service)

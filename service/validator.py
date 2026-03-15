@@ -41,7 +41,7 @@ class Validator:
 
     def validate_rate(rate: float):
         try:
-            rate_value = float(rate[0])
+            rate_value = float(rate)
             return rate_value > 0
         except (ValueError, TypeError):
             return False

@@ -69,6 +69,26 @@ class ExchangeModel:
                 )
                 row = cursor.fetchone()
                 return self.make_exchange_rate_by_row(row)
+
+        except sqlite3.Error as e:
+            raise errors.DbError()
+
+    def update_exchange_rate(self, base_code: str, target_code: str, rate: float):
+        try:
+            with self.get_db_connection() as conn:
+                cursor = conn.cursor()
+                base_id = self.get_id_by_code(base_code)
+                target_id = self.get_id_by_code(target_code)
+                print(base_id, target_id, rate)
+                cursor.execute(
+                    """UPDATE ExchangeRates 
+                   SET Rate = ? 
+                   WHERE BaseCurrencyId = ? AND TargetCurrencyId = ?""",
+                    (rate, base_id, target_id),
+                )
+                conn.commit()
+                exchange_rate = self.get_exchange_rate(base_code, target_code)
+                return exchange_rate
         except sqlite3.Error as e:
             raise errors.DbError()
 
