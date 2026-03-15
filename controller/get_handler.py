@@ -70,6 +70,6 @@ class GetHandler(JSONMixin):
                 return
             self.send_json(self.view.get_json_from_dict(amounts), 200)
         except errors.NoFormFieldError:
-            self.send_json(self.view.get_error_json("Некорректные данные формы"), 404)
+            self.send_json(self.view.get_error_json("Некорректные данные формы"), 400)
         except errors.DbError:
             self.send_json(self.view.get_error_json("Ошибка базы данных"), 500)

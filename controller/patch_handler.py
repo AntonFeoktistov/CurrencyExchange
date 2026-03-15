@@ -16,7 +16,7 @@ class PatchHandler(JSONMixin):
     def update_exchange_rate(self, form: dict, path: str):
         try:
             exchange_rate = self.service.update_exchange_rate(form, path)
-            self.send_json(self.view.get_json_from_dict(exchange_rate), 201)
+            self.send_json(self.view.get_json_from_dict(exchange_rate), 200)
         except errors.NoFormFieldError:
             self.send_json(
                 self.view.get_error_json("Отсутствует нужное поле формы"), 400

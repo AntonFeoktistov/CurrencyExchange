@@ -33,10 +33,10 @@ class Validator:
         return len(code) == 3 if code else False
 
     def validate_name(name: str):
-        return len(name) <= 30 if name else False
+        return (0 < len(name) <= 30) and bool(name and name.strip()) if name else False
 
     def validate_sign(sign: str):
-        return len(sign) == 1 if sign else False
+        return (len(sign) == 1 and sign != " ") if sign else False
 
     def validate_rate(rate: float):
         try:
