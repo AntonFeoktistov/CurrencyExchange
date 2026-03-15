@@ -45,9 +45,32 @@ class ExchangeModel:
                 row = cursor.fetchone()
                 exchange_rate = self.make_exchange_rate_by_row(row) if row else {}
                 return exchange_rate
-
         except sqlite3.Error as e:
             raise errors.DbError() from e
+
+    def add_exchange_rate(self, base_code, target_code, rate):
+        try:
+            with self.get_db_connection() as conn:
+                cursor = conn.cursor()
+                base_id = self.get_id_by_code(base_code)
+                target_id = self.get_id_by_code(target_code)
+                if not base_id or not target_id:
+                    return
+                cursor.execute(
+                    """INSERT INTO ExchangeRates (BaseCurrencyId, TargetCurrencyId, Rate)
+                      VALUES (?, ?, ?)""",
+                    (base_id, target_id, rate),
+                )
+                conn.commit()
+                cursor.execute(
+                    """SELECT ID, BaseCurrencyId, TargetCurrencyId, Rate 
+                    FROM ExchangeRates WHERE BaseCurrencyId = ? AND TargetCurrencyId = ? """,
+                    (base_id, target_id),
+                )
+                row = cursor.fetchone()
+                return self.make_exchange_rate_by_row(row)
+        except sqlite3.Error as e:
+            raise errors.DbError()
 
     def make_exchange_rate_by_row(self, row):
         exchange_rate = {
@@ -63,7 +86,8 @@ class ExchangeModel:
         return exchange_rate
 
     def get_id_by_code(self, code: str):
-        return self.currency_model.get_currency_by_code(code)["ID"]
+        row = self.currency_model.get_currency_by_code(code)
+        return row["ID"] if row else None
 
     @cached_property
     def currency_model(self):

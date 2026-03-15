@@ -31,6 +31,8 @@ class BaseHandler(BaseHTTPRequestHandler, JSONMixin):
         form = self.get_form()  # валидация формы дальше
         if self.path == "/currencies":
             self.post_handler.add_currency(form)
+        if self.path == "/exchangeRates":
+            self.post_handler.add_exchange_rate(form)
 
     def get_form(self):
         try:

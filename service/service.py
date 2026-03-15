@@ -66,6 +66,33 @@ class Service:
         except errors.DbError:
             raise
 
+    def add_exchange_rate(self, form: dict):
+        try:
+            if not form:
+                raise errors.NoFormFieldError()
+            base_code = form.get(
+                "baseCurrencyCode", None
+            )  # извлекает массив а не строку
+            target_code = form.get("targetCurrencyCode", None)
+            rate = form.get("rate", None)
+            if not Validator.validate_exchange_form(base_code, target_code, rate):
+                raise errors.NoFormFieldError()
+            base_code, target_code, rate = (
+                base_code[0].upper(),
+                target_code[0].upper(),
+                rate[0],
+            )
+            if self.exchange_model.get_exchange_rate(base_code, target_code):
+                raise errors.SuchExchangeRateAlreadyExistsError()
+            exchange_rate = self.exchange_model.add_exchange_rate(
+                base_code, target_code, rate
+            )
+            if not exchange_rate:
+                raise errors.NoSuchCurrencyError()
+            return exchange_rate
+        except errors.DbError:
+            raise
+
     @cached_property
     def currency_model(self):
         return CurrencyModel()

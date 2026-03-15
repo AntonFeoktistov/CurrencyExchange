@@ -42,7 +42,7 @@ class CurrencyModel:
                     (code,),
                 )
                 row = cursor.fetchone()
-                currency = dict(row)
+                currency = dict(row) if row else {}
                 return currency
         except sqlite3.Error as e:
             raise errors.DbError()
