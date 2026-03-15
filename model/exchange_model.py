@@ -23,7 +23,7 @@ class ExchangeModel:
                 rows = cursor.fetchall()  # id cur1_id cur2_id rate
                 exchange_rates = []
                 for row in rows:
-                    exchange_rate = self.make_exchange_rate_by_row(row)
+                    exchange_rate = Serializer.make_exchange_rate_by_row(self, row)
                     exchange_rates.append(exchange_rate)
                 return exchange_rates
         except sqlite3.Error as e:
@@ -43,7 +43,9 @@ class ExchangeModel:
                     (id_1, id_2),
                 )
                 row = cursor.fetchone()
-                exchange_rate = self.make_exchange_rate_by_row(row) if row else {}
+                exchange_rate = (
+                    Serializer.make_exchange_rate_by_row(self, row) if row else {}
+                )
                 return exchange_rate
         except sqlite3.Error as e:
             raise errors.DbError() from e
@@ -68,7 +70,7 @@ class ExchangeModel:
                     (base_id, target_id),
                 )
                 row = cursor.fetchone()
-                return self.make_exchange_rate_by_row(row)
+                return Serializer.make_exchange_rate_by_row(self, row)
 
         except sqlite3.Error as e:
             raise errors.DbError()
@@ -91,22 +93,9 @@ class ExchangeModel:
         except sqlite3.Error as e:
             raise errors.DbError()
 
-    def make_exchange_rate_by_row(self, row):
-        exchange_rate = {
-            "ID": row["ID"],
-            "BaseCurrency": self.currency_model.get_currency_by_id(
-                row["BaseCurrencyId"]
-            ),
-            "TargetCurrency": self.currency_model.get_currency_by_id(
-                row["TargetCurrencyId"]
-            ),
-            "rate": row["Rate"],
-        }
-        return exchange_rate
-
     def get_id_by_code(self, code: str):
         row = self.currency_model.get_currency_by_code(code)
-        return row["ID"] if row else None
+        return row["id"] if row else None
 
     @cached_property
     def currency_model(self):

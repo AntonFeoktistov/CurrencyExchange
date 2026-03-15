@@ -28,7 +28,7 @@ class CurrencyModel:
                 cursor = conn.cursor()
                 cursor.execute("SELECT * FROM Currencies")
                 rows = cursor.fetchall()
-                currencies = [dict(row) for row in rows]
+                currencies = Serializer.make_currency_list(rows)
             return currencies
         except sqlite3.Error as e:
             raise errors.DbError() from e
@@ -42,7 +42,7 @@ class CurrencyModel:
                     (code,),
                 )
                 row = cursor.fetchone()
-                currency = dict(row) if row else {}
+                currency = Serializer.make_currency(row)
                 return currency
         except sqlite3.Error as e:
             raise errors.DbError()
@@ -58,7 +58,8 @@ class CurrencyModel:
                 conn.commit()
                 cursor.execute("SELECT * FROM Currencies WHERE Code = ?", (code,))
                 row = cursor.fetchone()
-                return dict(row)
+                currency = Serializer.make_currency(row)
+                return currency
         except sqlite3.Error as e:
             raise errors.DbError()
 
@@ -71,7 +72,7 @@ class CurrencyModel:
                     (id,),
                 )
                 row = cursor.fetchone()
-                currency = dict(row)
+                currency = Serializer.make_currency(row) if row else {}
                 return currency
         except sqlite3.Error as e:
             raise errors.DbError()

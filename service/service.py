@@ -38,7 +38,7 @@ class Service:
             if not Validator.validate_currency_form(name, code, sign):
                 raise errors.NoFormFieldError()
             name, code, sign = name[0], code[0].upper(), sign[0]
-            if self.currency_model.get_currency(code):
+            if self.currency_model.get_currency_by_code(code):
                 raise errors.SuchCurrencyAlreadyExistsError()
             currency = self.currency_model.add_currency(name, code, sign)
             return currency
