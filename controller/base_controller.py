@@ -20,6 +20,10 @@ class BaseHandler(BaseHTTPRequestHandler, JSONMixin):
             self.get_handler.send_currencies()
         elif self.path.startswith("/currency/"):
             self.get_handler.send_currency(self.path)
+        elif self.path == "/exchangeRates":
+            self.get_handler.send_exchange_rates()
+        elif self.path.startswith("/exchangeRate/"):
+            self.get_handler.send_exchange_rate(self.path)
         else:
             self.get_handler.send_error_page()
 

@@ -26,18 +26,6 @@ class NoExchangeRatesInPathError(Exception):
     pass
 
 
-class NotValidNameError(Exception):
-    pass
-
-
-class NotValidCodeError(Exception):
-    pass
-
-
-class NotValidSignError(Exception):
-    pass
-
-
 class SuchCurrencyAlreadyExistsError(Exception):
     pass
 
@@ -46,17 +34,5 @@ class SuchExchangeRateAlreadyExistsError(Exception):
     pass
 
 
-class NotValidChangeCodesError(Exception):
-    pass
-
-
-class NotValidChangeRateError(Exception):
-    pass
-
-
 class NoSuchExchangeRateError(Exception):
-    pass
-
-
-class NotValidAmount(Exception):
     pass

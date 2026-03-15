@@ -1,6 +1,6 @@
 class Serializer:
 
-    def make_currency_list(rows: dict):
+    def make_currency_list(self, rows: dict):
         currencies = []
         for row in rows:
             currencies.append(
@@ -13,7 +13,7 @@ class Serializer:
             )
         return currencies
 
-    def make_currency(row: dict):
+    def make_currency(self, row: dict):
         currency = {}
         if row:
             currency = {

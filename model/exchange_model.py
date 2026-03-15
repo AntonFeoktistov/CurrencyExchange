@@ -1,0 +1,74 @@
+from functools import cached_property
+
+from errors import errors
+import sqlite3
+from .serializer import Serializer
+from .currency_model import CurrencyModel
+
+DB_FILE = "model/currencies.db"
+
+
+class ExchangeModel:
+
+    def get_db_connection(self):
+        conn = sqlite3.connect(DB_FILE)
+        conn.row_factory = sqlite3.Row  # Позволяет обращаться к колонкам по имени
+        return conn
+
+    def get_exchange_rates(self):
+        try:
+            with self.get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM ExchangeRates")
+                rows = cursor.fetchall()  # id cur1_id cur2_id rate
+                exchange_rates = []
+                for row in rows:
+                    exchange_rate = self.make_exchange_rate_by_row(row)
+                    exchange_rates.append(exchange_rate)
+                return exchange_rates
+        except sqlite3.Error as e:
+            raise errors.DbError() from e
+
+    def get_exchange_rate(self, code_1: str, code_2: str):
+        try:
+            with self.get_db_connection() as conn:
+                cursor = conn.cursor()
+                id_1 = self.get_id_by_code(code_1)
+                id_2 = self.get_id_by_code(code_2)
+                if not id_1 or not id_2:
+                    return
+                cursor.execute(
+                    """SELECT ID, BaseCurrencyId, TargetCurrencyId, Rate FROM ExchangeRates
+                WHERE BaseCurrencyId = ? AND TargetCurrencyId = ?""",
+                    (id_1, id_2),
+                )
+                row = cursor.fetchone()
+                exchange_rate = self.make_exchange_rate_by_row(row) if row else {}
+                return exchange_rate
+
+        except sqlite3.Error as e:
+            raise errors.DbError() from e
+
+    def make_exchange_rate_by_row(self, row):
+        exchange_rate = {
+            "ID": row["ID"],
+            "BaseCurrency": self.currency_model.get_currency_by_id(
+                row["BaseCurrencyId"]
+            ),
+            "TargetCurrency": self.currency_model.get_currency_by_id(
+                row["TargetCurrencyId"]
+            ),
+            "Rate": row["Rate"],
+        }
+        return exchange_rate
+
+    def get_id_by_code(self, code: str):
+        return self.currency_model.get_currency_by_code(code)["ID"]
+
+    @cached_property
+    def currency_model(self):
+        return CurrencyModel()
+
+    @cached_property
+    def serializer(self):
+        return Serializer()

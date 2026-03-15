@@ -1,4 +1,7 @@
-from model.model import Model
+from functools import cached_property
+
+from model.currency_model import CurrencyModel
+from model.exchange_model import ExchangeModel
 from errors import errors
 from .validator import Validator
 
@@ -7,7 +10,7 @@ class Service:
 
     def get_currencies(self):
         try:
-            return Model.get_all_currency()
+            return self.currency_model.get_all_currency()
         except errors.DbError:
             raise
 
@@ -17,7 +20,7 @@ class Service:
             if not is_currency_valid:
                 raise errors.NoCodeInPathError()
             code = path[-3:].upper()
-            currency = Model.get_currency(code)
+            currency = self.currency_model.get_currency_by_code(code)
             if currency:
                 return currency
             else:
@@ -35,9 +38,38 @@ class Service:
             if not Validator.validate_currency_form(name, code, sign):
                 raise errors.NoFormFieldError()
             name, code, sign = name[0], code[0].upper(), sign[0]
-            if Model.get_currency(code):
+            if self.currency_model.get_currency(code):
                 raise errors.SuchCurrencyAlreadyExistsError()
-            currency = Model.add_currency(name, code, sign)
+            currency = self.currency_model.add_currency(name, code, sign)
             return currency
         except errors.DbError:
             raise
+
+    def get_exchange_rates(self):
+        try:
+            return self.exchange_model.get_exchange_rates()
+        except errors.DbError:
+            raise
+
+    def get_exchange_rate(self, path: str):
+        try:
+            is_exchange_rate_valid = Validator.validate_exchange_rate(path)
+            if not is_exchange_rate_valid:
+                raise errors.NoExchangeRatesInPathError()
+            code_1 = path[-6:-3].upper()
+            code_2 = path[-3:].upper()
+            exchange_rate = self.exchange_model.get_exchange_rate(code_1, code_2)
+            if exchange_rate:
+                return exchange_rate
+            else:
+                raise errors.NoSuchExchangeRateError()
+        except errors.DbError:
+            raise
+
+    @cached_property
+    def currency_model(self):
+        return CurrencyModel()
+
+    @cached_property
+    def exchange_model(self):
+        return ExchangeModel()

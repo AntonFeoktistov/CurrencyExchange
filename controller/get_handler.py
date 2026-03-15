@@ -37,3 +37,25 @@ class GetHandler(JSONMixin):
             self.send_json(self.view.get_error_json("Валюта не найдена"), 404)
         except errors.DbError:
             self.send_json(self.view.get_error_json("Ошибка базы данных"), 500)
+
+    def send_exchange_rates(self):
+        try:
+            exchange_rates = self.service.get_exchange_rates()
+            self.send_json(self.view.get_json_from_list(exchange_rates), 200)
+        except errors.DbError:
+            self.send_json(self.view.get_error_json("Ошибка базы данных"), 500)
+
+    def send_exchange_rate(self, path: str):
+        try:
+            exchange_rate = self.service.get_exchange_rate(path)
+            self.send_json(self.view.get_json_from_dict(exchange_rate), 200)
+        except errors.NoExchangeRatesInPathError:
+            self.send_json(
+                self.view.get_error_json("Коды валют пары отсутствуют в адресе"), 400
+            )
+        except errors.NoSuchExchangeRateError:
+            self.send_json(
+                self.view.get_error_json("Обменный курс для пары не найден"), 404
+            )
+        except errors.DbError:
+            self.send_json(self.view.get_error_json("Ошибка базы данных"), 500)

@@ -1,9 +1,7 @@
 class Validator:
     def validate_currency_code(path: str):
         # /currency/USD
-        if len(path) != 13:
-            return False
-        return True
+        return len(path) == 13
 
     def validate_currency_form(name: list, code: list, sign: list):
         if not name or not code or not sign:
@@ -15,6 +13,10 @@ class Validator:
         ):
             return True
         return False
+
+    def validate_exchange_rate(path):
+        # /exchangeRate/USDEUR
+        return len(path) == 20
 
     def validate_code(code: str):
         return len(code) == 3 if code else False
