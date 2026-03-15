@@ -114,6 +114,51 @@ class Service:
         except errors.DbError:
             raise
 
+    def convert_amount(self, query: dict):
+        if not query:
+            raise errors.NoFormFieldError()
+        from_code = query.get("from", None)
+        to_code = query.get("to", None)
+        amount = query.get("amount", None)
+        print(from_code, to_code, amount)
+        if not Validator.validate_exchange_form(from_code, to_code, amount):
+            raise errors.NoFormFieldError()
+        from_code, to_code, amount = (
+            from_code[0].upper(),
+            to_code[0].upper(),
+            float(amount[0]),
+        )
+        AB_variant = self.exchange_model.get_exchange_rate(
+            from_code, to_code
+        )  # return dict
+        if AB_variant:
+            AB_variant["amount"] = amount
+            AB_variant["convertedAmount"] = round(AB_variant["rate"] * amount, 3)
+            return AB_variant
+        BA_variant = self.exchange_model.get_exchange_rate(
+            to_code, from_code
+        )  # return dict
+        if BA_variant:
+            BA_variant["rate"] = round(1 / BA_variant["rate"], 3)
+            BA_variant["amount"] = amount
+            BA_variant["convertedAmount"] = round(BA_variant["rate"] * amount, 3)
+            return BA_variant
+        USD_variant_1 = self.exchange_model.get_exchange_rate("USD", from_code)
+        USD_variant_2 = self.exchange_model.get_exchange_rate("USD", to_code)
+        print(USD_variant_1, USD_variant_2)
+        if USD_variant_1 and USD_variant_2:
+            currency_1 = self.currency_model.get_currency_by_code(from_code)
+            currency_2 = self.currency_model.get_currency_by_code(to_code)
+            rate = USD_variant_2["rate"] / USD_variant_1["rate"]
+            return {
+                "baseCurrency": currency_1,
+                "targetCurrency": currency_2,
+                "rate": rate,
+                "amount": amount,
+                "convertedAmount": round(rate * amount, 3),
+            }
+        return
+
     @cached_property
     def currency_model(self):
         return CurrencyModel()

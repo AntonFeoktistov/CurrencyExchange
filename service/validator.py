@@ -17,7 +17,6 @@ class Validator:
     def validate_exchange_form(base_code: list, target_code: list, rate: list):
         if not base_code or not target_code or not rate:
             return False
-        print(base_code, target_code, rate)
         if (
             Validator.validate_code(base_code[0])
             and Validator.validate_code(target_code[0])

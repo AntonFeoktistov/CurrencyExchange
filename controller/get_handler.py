@@ -59,3 +59,17 @@ class GetHandler(JSONMixin):
             )
         except errors.DbError:
             self.send_json(self.view.get_error_json("Ошибка базы данных"), 500)
+
+    def convert_amount(self, query: dict):
+        try:
+            amounts = self.service.convert_amount(query)
+            if not amounts:
+                self.send_json(
+                    self.view.get_error_json("Невозможно обменять валюты"), 404
+                )
+                return
+            self.send_json(self.view.get_json_from_dict(amounts), 200)
+        except errors.NoFormFieldError:
+            self.send_json(self.view.get_error_json("Некорректные данные формы"), 404)
+        except errors.DbError:
+            self.send_json(self.view.get_error_json("Ошибка базы данных"), 500)

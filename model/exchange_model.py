@@ -79,7 +79,6 @@ class ExchangeModel:
                 cursor = conn.cursor()
                 base_id = self.get_id_by_code(base_code)
                 target_id = self.get_id_by_code(target_code)
-                print(base_id, target_id, rate)
                 cursor.execute(
                     """UPDATE ExchangeRates 
                    SET Rate = ? 
@@ -101,7 +100,7 @@ class ExchangeModel:
             "TargetCurrency": self.currency_model.get_currency_by_id(
                 row["TargetCurrencyId"]
             ),
-            "Rate": row["Rate"],
+            "rate": row["Rate"],
         }
         return exchange_rate
 

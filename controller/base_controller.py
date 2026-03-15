@@ -25,6 +25,8 @@ class BaseHandler(BaseHTTPRequestHandler, JSONMixin):
             self.get_handler.send_exchange_rates()
         elif self.path.startswith("/exchangeRate/"):
             self.get_handler.send_exchange_rate(self.path)
+        elif self.path.startswith("/exchange"):
+            self.get_handler.convert_amount(self.get_query(self.path))
         else:
             self.get_handler.send_error_page()
 
@@ -39,6 +41,14 @@ class BaseHandler(BaseHTTPRequestHandler, JSONMixin):
         form = self.get_form()
         if self.path.startswith("/exchangeRate/"):
             self.patch_handler.update_exchange_rate(form, self.path)
+
+    def get_query(self, path: str):
+        try:
+            parsed_path = urllib.parse.urlparse(path)
+            query = urllib.parse.parse_qs(parsed_path.query)
+            return query
+        except Exception as e:
+            return None
 
     def get_form(self):
         try:
