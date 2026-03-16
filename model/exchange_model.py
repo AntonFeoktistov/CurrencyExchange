@@ -2,49 +2,41 @@ from functools import cached_property
 from errors import errors
 import sqlite3
 from .serializer import Serializer
+from .base_model import BaseModel
 from .currency_model import CurrencyModel
 
-DB_FILE = "model/currencies.db"
 
-
-class ExchangeModel:
-
-    def get_db_connection(self):
-        conn = sqlite3.connect(DB_FILE)
-        conn.row_factory = sqlite3.Row  # Позволяет обращаться к колонкам по имени
-        return conn
+class ExchangeModel(BaseModel):
 
     def get_exchange_rates(self):
         try:
             with self.get_db_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT * FROM ExchangeRates")
-                rows = cursor.fetchall()  # id cur1_id cur2_id rate
+                rows = cursor.fetchall()
                 exchange_rates = []
                 for row in rows:
-                    exchange_rate = Serializer.make_exchange_rate_by_row(self, row)
+                    exchange_rate = self.serializer.make_exchange_rate(self, row)
                     exchange_rates.append(exchange_rate)
                 return exchange_rates
         except sqlite3.Error as e:
             raise errors.DbError() from e
 
-    def get_exchange_rate(self, code_1: str, code_2: str):
+    def get_exchange_rate(self, base_code: str, target_code: str):
         try:
             with self.get_db_connection() as conn:
                 cursor = conn.cursor()
-                id_1 = self.get_id_by_code(code_1)
-                id_2 = self.get_id_by_code(code_2)
-                if not id_1 or not id_2:
+                base_id = self.get_id_by_code(base_code)
+                target_id = self.get_id_by_code(target_code)
+                if not base_id or not target_id:
                     return
                 cursor.execute(
                     """SELECT ID, BaseCurrencyId, TargetCurrencyId, Rate FROM ExchangeRates
                 WHERE BaseCurrencyId = ? AND TargetCurrencyId = ?""",
-                    (id_1, id_2),
+                    (base_id, target_id),
                 )
                 row = cursor.fetchone()
-                exchange_rate = (
-                    Serializer.make_exchange_rate_by_row(self, row) if row else {}
-                )
+                exchange_rate = self.serializer.make_exchange_rate(self, row)
                 return exchange_rate
         except sqlite3.Error as e:
             raise errors.DbError() from e
@@ -69,11 +61,14 @@ class ExchangeModel:
                     (base_id, target_id),
                 )
                 row = cursor.fetchone()
-                return Serializer.make_exchange_rate_by_row(self, row)
+                print(row)
+                print(base_id, target_id)
+                print(base_code, target_code)
+                return self.serializer.make_exchange_rate(self, row)
         except sqlite3.Error as e:
             raise errors.DbError()
 
-    def update_exchange_rate(self, base_code: str, target_code: str, rate: float):
+    def update_exchange_rate(self, base_code: str, target_code: str, rate: float | int):
         try:
             with self.get_db_connection() as conn:
                 cursor = conn.cursor()
@@ -92,8 +87,8 @@ class ExchangeModel:
             raise errors.DbError()
 
     def get_id_by_code(self, code: str):
-        row = self.currency_model.get_currency_by_code(code)
-        return row["id"] if row else None
+        currency = self.currency_model.get_currency_by_code(code)
+        return currency["id"] if currency else None
 
     @cached_property
     def currency_model(self):

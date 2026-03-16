@@ -22,7 +22,7 @@ def create_database():
             CREATE TABLE Currencies (
                 ID INTEGER PRIMARY KEY AUTOINCREMENT,
                 Code VARCHAR(3) NOT NULL UNIQUE,
-                FullName VARCHAR(40) NOT NULL,
+                FullName VARCHAR(30) NOT NULL,
                 Sign VARCHAR(3) NOT NULL
             )
         """
@@ -44,8 +44,13 @@ def create_database():
         """,
             currencies,
         )
+        print(f"Добавлено {len(currencies)} валют.")
 
-        # 4. Создаём ExchangeRates С ВНЕШНИМИ КЛЮЧАМИ ВНУТРИ CREATE TABLE
+        # 4. Получаем ID валют для создания курсов
+        cursor.execute("SELECT ID, Code FROM Currencies")
+        currency_ids = {code: id_ for id_, code in cursor.fetchall()}
+
+        # 5. Создаём ExchangeRates
         cursor.execute(
             """
             CREATE TABLE ExchangeRates (
@@ -54,26 +59,68 @@ def create_database():
                 TargetCurrencyId INTEGER NOT NULL,
                 Rate DECIMAL(12,6) NOT NULL,
                 
-                -- Внешние ключи прямо в CREATE TABLE
                 FOREIGN KEY (BaseCurrencyId) REFERENCES Currencies(ID),
                 FOREIGN KEY (TargetCurrencyId) REFERENCES Currencies(ID),
-                
-                -- Уникальный ключ на пару валют
                 UNIQUE (BaseCurrencyId, TargetCurrencyId)
             )
         """
         )
         print("Таблица ExchangeRates создана.")
 
+        # 6. Добавляем обменные курсы
+        exchange_rates = [
+            # USD -> другие валюты
+            (currency_ids["USD"], currency_ids["EUR"], 0.92),  # USD → EUR
+            (currency_ids["USD"], currency_ids["RUB"], 92.50),  # USD → RUB
+            # EUR -> другие валюты
+            (currency_ids["EUR"], currency_ids["USD"], 1.09),  # EUR → USD
+            # GBP -> другие валюты
+            (currency_ids["GBP"], currency_ids["RUB"], 118.50),  # GBP → RUB
+            # JPY -> другие валюты
+            (currency_ids["JPY"], currency_ids["USD"], 0.0067),  # JPY → USD
+            # RUB -> другие валюты
+            (currency_ids["RUB"], currency_ids["EUR"], 0.0099),  # RUB → EUR
+            (currency_ids["RUB"], currency_ids["GBP"], 0.0084),  # RUB → GBP
+            (currency_ids["RUB"], currency_ids["JPY"], 1.61),  # RUB → JPY
+        ]
+
+        cursor.executemany(
+            """
+            INSERT INTO ExchangeRates (BaseCurrencyId, TargetCurrencyId, Rate)
+            VALUES (?, ?, ?)
+        """,
+            exchange_rates,
+        )
+        print(f"Добавлено {len(exchange_rates)} обменных курсов.")
+
         conn.commit()
-        print("База данных успешно инициализирована.")
+        print("✅ База данных успешно инициализирована.")
+
+        # 7. Проверка: выведем несколько курсов для наглядности
+        cursor.execute(
+            """
+            SELECT 
+                c1.Code as BaseCurrency,
+                c2.Code as TargetCurrency,
+                er.Rate
+            FROM ExchangeRates er
+            JOIN Currencies c1 ON er.BaseCurrencyId = c1.ID
+            JOIN Currencies c2 ON er.TargetCurrencyId = c2.ID
+            ORDER BY c1.Code, c2.Code
+            LIMIT 10
+        """
+        )
+
+        print("\n📊 Примеры созданных курсов (первые 10):")
+        for row in cursor.fetchall():
+            print(f"  {row[0]} → {row[1]}: {row[2]}")
 
     except sqlite3.Error as e:
-        print(f"Ошибка при работе с БД: {e}")
+        print(f"❌ Ошибка при работе с БД: {e}")
         conn.rollback()
     finally:
         conn.close()
-        print(f"Соединение с {db_file} закрыто.")
+        print(f"\n🔒 Соединение с {db_file} закрыто.")
 
 
 if __name__ == "__main__":

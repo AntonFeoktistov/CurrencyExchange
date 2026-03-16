@@ -1,16 +1,12 @@
+from functools import cached_property
+
 from errors import errors
 import sqlite3
 from .serializer import Serializer
+from .base_model import BaseModel
 
-DB_FILE = "model/currencies.db"
 
-
-class CurrencyModel:
-
-    def get_db_connection(self):
-        conn = sqlite3.connect(DB_FILE)
-        conn.row_factory = sqlite3.Row  # Позволяет обращаться к колонкам по имени
-        return conn
+class CurrencyModel(BaseModel):
 
     def get_all_currency(self):
         try:
@@ -18,7 +14,7 @@ class CurrencyModel:
                 cursor = conn.cursor()
                 cursor.execute("SELECT * FROM Currencies")
                 rows = cursor.fetchall()
-                currencies = Serializer.make_currency_list(rows)
+                currencies = self.serializer.make_currency_list(rows)
             return currencies
         except sqlite3.Error as e:
             raise errors.DbError() from e
@@ -32,7 +28,7 @@ class CurrencyModel:
                     (code,),
                 )
                 row = cursor.fetchone()
-                currency = Serializer.make_currency(row)
+                currency = self.serializer.make_currency(row)
                 return currency
         except sqlite3.Error as e:
             raise errors.DbError()
@@ -48,7 +44,7 @@ class CurrencyModel:
                 conn.commit()
                 cursor.execute("SELECT * FROM Currencies WHERE Code = ?", (code,))
                 row = cursor.fetchone()
-                currency = Serializer.make_currency(row)
+                currency = self.serializer.make_currency(row)
                 return currency
         except sqlite3.Error as e:
             raise errors.DbError()
@@ -62,7 +58,11 @@ class CurrencyModel:
                     (id,),
                 )
                 row = cursor.fetchone()
-                currency = Serializer.make_currency(row) if row else {}
+                currency = self.serializer.make_currency(row)
                 return currency
         except sqlite3.Error as e:
             raise errors.DbError()
+
+    @cached_property
+    def serializer(self):
+        return Serializer()

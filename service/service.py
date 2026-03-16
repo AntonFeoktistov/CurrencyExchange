@@ -1,5 +1,4 @@
 from functools import cached_property
-
 from model.currency_model import CurrencyModel
 from model.exchange_model import ExchangeModel
 from errors import errors
@@ -16,10 +15,9 @@ class Service:
 
     def get_currency(self, path: str):
         try:
-            is_currency_valid = Validator.validate_currency_code(path)
-            if not is_currency_valid:
+            if not self.validator.validate_currency_path(path):
                 raise errors.NoCodeInPathError()
-            code = path[-3:].upper()
+            code = path[-3:]
             currency = self.currency_model.get_currency_by_code(code)
             if currency:
                 return currency
@@ -32,12 +30,11 @@ class Service:
         try:
             if not form:
                 raise errors.NoFormFieldError()
-            name = form.get("name", None)  # извлекает массив а не строку
-            code = form.get("code", None)
-            sign = form.get("sign", None)
-            if not Validator.validate_currency_form(name, code, sign):
+            name = (form.get("name") or [""])[0]
+            code = (form.get("code") or [""])[0]
+            sign = (form.get("sign") or [""])[0]
+            if not self.validator.validate_add_currency_form(name, code, sign):
                 raise errors.NoFormFieldError()
-            name, code, sign = name[0], code[0].upper(), sign[0]
             if self.currency_model.get_currency_by_code(code):
                 raise errors.SuchCurrencyAlreadyExistsError()
             currency = self.currency_model.add_currency(name, code, sign)
@@ -53,12 +50,13 @@ class Service:
 
     def get_exchange_rate(self, path: str):
         try:
-            is_exchange_rate_valid = Validator.validate_exchange_rate(path)
-            if not is_exchange_rate_valid:
+            if not self.validator.validate_exchange_rate_path(path):
                 raise errors.NoExchangeRatesInPathError()
-            code_1 = path[-6:-3].upper()
-            code_2 = path[-3:].upper()
-            exchange_rate = self.exchange_model.get_exchange_rate(code_1, code_2)
+            base_code = path[-6:-3]
+            target_code = path[-3:]
+            exchange_rate = self.exchange_model.get_exchange_rate(
+                base_code, target_code
+            )
             if exchange_rate:
                 return exchange_rate
             else:
@@ -70,18 +68,11 @@ class Service:
         try:
             if not form:
                 raise errors.NoFormFieldError()
-            base_code = form.get(
-                "baseCurrencyCode", None
-            )  # извлекает массив а не строку
-            target_code = form.get("targetCurrencyCode", None)
-            rate = form.get("rate", None)
-            if not Validator.validate_exchange_form(base_code, target_code, rate):
+            base_code = (form.get("baseCurrencyCode") or [""])[0]
+            target_code = (form.get("targetCurrencyCode") or [""])[0]
+            rate = (form.get("rate") or [""])[0]
+            if not self.validator.validate_exchange_form(base_code, target_code, rate):
                 raise errors.NoFormFieldError()
-            base_code, target_code, rate = (
-                base_code[0].upper(),
-                target_code[0].upper(),
-                rate[0],
-            )
             if self.exchange_model.get_exchange_rate(base_code, target_code):
                 raise errors.SuchExchangeRateAlreadyExistsError()
             exchange_rate = self.exchange_model.add_exchange_rate(
@@ -97,18 +88,17 @@ class Service:
         try:
             if not form:
                 raise errors.NoFormFieldError()
-            rate = form.get("rate", [0])
-            if not Validator.validate_rate(rate[0]):
+            rate = (form.get("rate") or [""])[0]
+            if not self.validator.validate_rate(rate):
                 raise errors.NoFormFieldError()
-            is_exchange_rate_valid = Validator.validate_exchange_rate(path)
-            if not is_exchange_rate_valid:
+            if not self.validator.validate_exchange_rate_path(path):
                 raise errors.NoExchangeRatesInPathError()
-            base_code = path[-6:-3].upper()
-            target_code = path[-3:].upper()
+            base_code = path[-6:-3]
+            target_code = path[-3:]
             if not self.exchange_model.get_exchange_rate(base_code, target_code):
                 raise errors.NoSuchExchangeRateError()
             exchange_rate = self.exchange_model.update_exchange_rate(
-                base_code, target_code, rate[0]
+                base_code, target_code, rate
             )
             return exchange_rate
         except errors.DbError:
@@ -117,47 +107,52 @@ class Service:
     def convert_amount(self, query: dict):
         if not query:
             raise errors.NoFormFieldError()
-        from_code = query.get("from", None)
-        to_code = query.get("to", None)
-        amount = query.get("amount", None)
-        print(from_code, to_code, amount)
-        if not Validator.validate_exchange_form(from_code, to_code, amount):
+        from_code = (query.get("from") or [""])[0]
+        to_code = (query.get("to") or [""])[0]
+        amount = (query.get("amount") or [""])[0]
+        if not self.validator.validate_exchange_form(from_code, to_code, amount):
             raise errors.NoFormFieldError()
-        from_code, to_code, amount = (
-            from_code[0].upper(),
-            to_code[0].upper(),
-            float(amount[0]),
-        )
-        AB_variant = self.exchange_model.get_exchange_rate(
-            from_code, to_code
-        )  # return dict
+        amount = float(amount)
+        AB_variant = self.convert_AB(from_code, to_code, amount)
+        if AB_variant:
+            return AB_variant
+        BA_variant = self.convert_BA(from_code, to_code, amount)
+        if BA_variant:
+            return BA_variant
+        USD_variant = self.convert_USD(from_code, to_code, amount)
+        if USD_variant:
+            return USD_variant
+        return {}
+
+    def convert_AB(self, from_code: str, to_code: str, amount: float | int):
+        AB_variant = self.exchange_model.get_exchange_rate(from_code, to_code)
         if AB_variant:
             AB_variant["amount"] = amount
             AB_variant["convertedAmount"] = round(AB_variant["rate"] * amount, 3)
             return AB_variant
-        BA_variant = self.exchange_model.get_exchange_rate(
-            to_code, from_code
-        )  # return dict
+
+    def convert_BA(self, from_code: str, to_code: str, amount: float | int):
+        BA_variant = self.exchange_model.get_exchange_rate(to_code, from_code)
         if BA_variant:
             BA_variant["rate"] = round(1 / BA_variant["rate"], 3)
             BA_variant["amount"] = amount
             BA_variant["convertedAmount"] = round(BA_variant["rate"] * amount, 3)
             return BA_variant
-        USD_variant_1 = self.exchange_model.get_exchange_rate("USD", from_code)
-        USD_variant_2 = self.exchange_model.get_exchange_rate("USD", to_code)
-        print(USD_variant_1, USD_variant_2)
-        if USD_variant_1 and USD_variant_2:
-            currency_1 = self.currency_model.get_currency_by_code(from_code)
-            currency_2 = self.currency_model.get_currency_by_code(to_code)
-            rate = USD_variant_2["rate"] / USD_variant_1["rate"]
+
+    def convert_USD(self, from_code: str, to_code: str, amount: float | int):
+        USD_variant_from = self.exchange_model.get_exchange_rate("USD", from_code)
+        USD_variant_to = self.exchange_model.get_exchange_rate("USD", to_code)
+        if USD_variant_from and USD_variant_to:
+            currency_from = self.currency_model.get_currency_by_code(from_code)
+            currency_to = self.currency_model.get_currency_by_code(to_code)
+            rate = USD_variant_from["rate"] / USD_variant_to["rate"]
             return {
-                "baseCurrency": currency_1,
-                "targetCurrency": currency_2,
+                "baseCurrency": currency_from,
+                "targetCurrency": currency_to,
                 "rate": rate,
                 "amount": amount,
                 "convertedAmount": round(rate * amount, 3),
             }
-        return
 
     @cached_property
     def currency_model(self):
@@ -166,3 +161,7 @@ class Service:
     @cached_property
     def exchange_model(self):
         return ExchangeModel()
+
+    @cached_property
+    def validator(self):
+        return Validator()

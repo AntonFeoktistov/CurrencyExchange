@@ -1,7 +1,3 @@
-class NoCurrenciesError(Exception):
-    pass
-
-
 class DbError(Exception):
     pass
 
@@ -15,10 +11,6 @@ class NoFormFieldError(Exception):
 
 
 class NoSuchCurrencyError(Exception):
-    pass
-
-
-class NoCurrencyInPathError(Exception):
     pass
 
 

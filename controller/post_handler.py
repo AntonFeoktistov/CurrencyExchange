@@ -1,13 +1,10 @@
-from http.server import BaseHTTPRequestHandler
-import json
 from view.view import View
 from service.service import Service
 from errors import errors
-from .json_mixin import JSONMixin
+from .front_mixin import FrontMixin
 
 
-class PostHandler(JSONMixin):
-
+class PostHandler(FrontMixin):
     def __init__(self, handler, view: View, service: Service):
         self.handler = handler
         self.view = view
@@ -16,7 +13,7 @@ class PostHandler(JSONMixin):
     def add_currency(self, form: dict):
         try:
             currency = self.service.add_currency(form)
-            self.send_json(self.view.get_json_from_dict(currency), 201)
+            self.send_json(self.view.get_json(currency), 201)
         except errors.NoFormFieldError:
             self.send_json(
                 self.view.get_error_json("Отсутствует нужное поле формы"), 400
@@ -29,7 +26,7 @@ class PostHandler(JSONMixin):
     def add_exchange_rate(self, form: dict):
         try:
             exchange_rate = self.service.add_exchange_rate(form)
-            self.send_json(self.view.get_json_from_dict(exchange_rate), 201)
+            self.send_json(self.view.get_json(exchange_rate), 201)
         except errors.NoFormFieldError:
             self.send_json(
                 self.view.get_error_json("Отсутствует нужное поле формы"), 400
