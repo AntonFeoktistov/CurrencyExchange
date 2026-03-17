@@ -1,4 +1,4 @@
-from controller.base_controller import BaseHandler
+from controller.base_handler import BaseHandler
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 

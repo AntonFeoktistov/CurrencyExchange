@@ -61,9 +61,6 @@ class ExchangeModel(BaseModel):
                     (base_id, target_id),
                 )
                 row = cursor.fetchone()
-                print(row)
-                print(base_id, target_id)
-                print(base_code, target_code)
                 return self.serializer.make_exchange_rate(self, row)
         except sqlite3.Error as e:
             raise errors.DbError()
