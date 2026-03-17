@@ -145,7 +145,7 @@ class Service:
         if USD_variant_from and USD_variant_to:
             currency_from = self.currency_model.get_currency_by_code(from_code)
             currency_to = self.currency_model.get_currency_by_code(to_code)
-            rate = USD_variant_from["rate"] / USD_variant_to["rate"]
+            rate = USD_variant_to["rate"] / USD_variant_from["rate"]
             return {
                 "baseCurrency": currency_from,
                 "targetCurrency": currency_to,
