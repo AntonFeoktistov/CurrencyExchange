@@ -14,13 +14,18 @@ class BaseHandler(BaseHTTPRequestHandler, FrontMixin):
     def do_GET(self):
         if self.path == "/currencies":
             self.get_handler.send_currencies()
+
         elif self.path.startswith("/currency/"):
             self.get_handler.send_currency(self.path)
+
         elif self.path == "/exchangeRates":
             self.get_handler.send_exchange_rates()
+
         elif self.path.startswith("/exchangeRate/"):
             self.get_handler.send_exchange_rate(self.path)
+
         elif self.path.startswith("/exchange"):
+
             self.get_handler.convert_amount(self.get_query(self.path))
         else:
             self.send_static(self.path)
@@ -29,6 +34,7 @@ class BaseHandler(BaseHTTPRequestHandler, FrontMixin):
         form = self.get_form()
         if self.path == "/currencies":
             self.post_handler.add_currency(form)
+
         if self.path == "/exchangeRates":
             self.post_handler.add_exchange_rate(form)
 
